@@ -1,0 +1,206 @@
+﻿@model ToDoViewModel;
+
+@{
+    ViewData["Title"] = "ToDo List";
+}
+
+<div class="mt-4">
+    <div>
+        <form id="addTaskForm">
+            <div class="form-group">
+                <label>Назва завдання</label>
+                <input id="newTaskName" type="text" class="form-control" required/>
+            </div>
+            <button id="add-task" class="btn btn-primary mt-2">Додати</button>
+        </form>
+    </div>
+
+    <div class="mt-3">
+        Пошук по імені
+        <input id="searchBar" type="text" class="form-control" required />
+    </div>
+
+    <div id="taskList" class="d-flex flex-column list-group mt-4">
+        @foreach (var task in Model.Tasks)
+        {
+            <div class="list-group-item d-flex justify-content-between align-items-center" 
+                data-id="@task.Id">
+                <div class="d-flex align-items-center gap-1">
+                    <input id="isTaskCompletedCheckBox" class="is-completed-chkbox form-check-input" type="checkbox" asp-for="@task.IsCompleted">
+                    <div class="ms-2 editable-title">
+                        <div class="title form-check-label"
+                            style="@(task.IsCompleted ? "text-decoration: line-through" : "")">
+                            @task.Title
+                        </div>
+                        <div class="d-flex flex-column">
+                            <input type="text" class="form-control edit-title" style="display: none"/>
+                            <div class="validation-message" style="display: none">Заповніть поле!</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary save-btn" style="display: none">Зберегти</button>
+                </div>
+                <div>
+                    <button class="edit-btn btn btn-primary">Редагувати</button>
+                    <button class="delete-btn btn btn-danger">Видалити</button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section scripts 
+{
+    <script>
+        const SEARCH_DEBOUNCE_DELAY = 400;
+
+        $(document).ready(function () {
+            $('#addTaskForm').submit(function (event) {
+                event.preventDefault();
+                let title = $('#newTaskName').val();
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/tasks/',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ title: title }),
+                    success: function (response) {
+                        $('#taskList').prepend(getTaskHtml(response));
+                    },
+                    error: function (xhr, status, error) {
+                        console.error(xhr.responseText);
+                        alert('Виникла помилка!');
+                    }
+                });
+            });
+
+            function getTaskHtml(task) {
+                return `<div class="list-group-item d-flex justify-content-between align-items-center" data-id="${task.id}">
+                            <div class="d-flex align-items-center gap-1">
+                                <input class="is-completed-chkbox form-check-input" type="checkbox">
+                                <div class="ms-2 editable-title">
+                                    <label class="title form-check-label">${task.title}</label>
+                                    <div class="d-flex flex-column">
+                                        <input type="text" class="form-control edit-title" style="display: none"/>
+                                        <div class="validation-message" style="display: none">Заповніть поле!</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary save-btn" style="display: none">Зберегти</button>
+                            </div>
+                            <div>
+                                <button class="btn btn-primary edit-btn">Редагувати</button>
+                                <button class="btn btn-danger">Видалити</button>
+                            </div>
+                        </div>`;
+            }
+
+            $('#taskList').on('click', '.edit-btn', function () {
+                let container = $(this).parent().parent();
+                let titleElement = container.find('.title');
+                let textContent = titleElement.text();
+
+                titleElement.hide();
+                container.find('.edit-title').val(textContent.trim()).show();
+                container.find('.save-btn').show();
+
+                container.find('.save-btn').on('click', function () {
+                    let taskId = container.data('id');
+                    let taskTitle = container.find('.edit-title').val();
+
+                    let validationMessageElement = container.find('.validation-message');
+                    if (taskTitle == '') {
+                        validationMessageElement.show();
+                        return;
+                    }
+                    else {
+                        validationMessageElement.hide();
+                    }
+
+                    let isCompleted = container.find('.is-completed-chkbox').is(':checked');
+
+                    $.ajax({
+                        type: 'PATCH',
+                        url: '/tasks/' + taskId,
+                        contentType: 'application/json',
+                        data: JSON.stringify({ title: taskTitle }),
+                        success: function (response) {
+                            container.find('.edit-title').hide();
+                            container.find('.save-btn').hide();
+                            container.find('.title').text(taskTitle).show();
+                        },
+                        error: function (error) {
+                            console.error(error);
+                            alert("Виникла помилка при редагуванні!");
+                        }
+                    });
+                });
+            });
+
+
+            $('#taskList').on('click', '.is-completed-chkbox', function () {
+                let isTaskCompleted = false;
+                let $this = $(this);
+                if ($this.is(':checked')) {
+                    isTaskCompleted = true;
+                }
+
+                $.ajax({
+                    type: 'PATCH',
+                    url: '/tasks/' + $this.parent().parent().data('id'),
+                    contentType: 'application/json',
+                    data: JSON.stringify({ isCompleted: isTaskCompleted }),
+                    success: function () {
+                        let style = isTaskCompleted ? 'line-through' : '';
+                        console.log($this.parent().find('.title'));
+                        $this.parent().find('.title').css('text-decoration', style);
+                    },
+                    error: function (error) {
+                        console.error(error);
+                        alert("Виникла помилка зміни статусу завдання!");
+                    }
+                })
+            });
+
+            $('#taskList').on('click', '.delete-btn', function () {
+                let $this = $(this);
+                let taskId = $this.parent().parent().data('id');
+                $.ajax({
+                    type: 'DELETE',
+                    url: '/tasks/' + taskId,
+                    success: function () {
+                        console.log($this.parent().parent().remove());
+                        $this.parent().parent().remove();
+                    },
+                    error: function (error) {
+                        console.error(error);
+                        alert("Виникла помилка видалення завдання!");
+                    }
+                })
+            });
+
+            let debounceTimeout;
+            $('#searchBar').on('input', function (e) {
+                clearTimeout(debounceTimeout);
+
+                debounceTimeout = setTimeout(
+                    function () {
+                        $.ajax({
+                            type: 'GET',
+                            url: '/tasks/?title=' + $('#searchBar').val(),
+                            contentType: 'application/json',
+                            success: function (response) {
+                                $('#taskList').empty();
+                                response.forEach((task) => {
+                                    $('#taskList').append(getTaskHtml(task));
+                                })
+                            },
+                            error: function (xhr, status, error) {
+                                console.error(xhr.responseText);
+                                alert('Виникла помилка!');
+                            }
+                        });
+                    }, SEARCH_DEBOUNCE_DELAY
+                );
+            });
+        });
+    </script>
+}
