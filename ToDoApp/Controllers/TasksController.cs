@@ -38,7 +38,7 @@ namespace ToDoApp.Controllers
         public async Task<ActionResult<ToDoTaskDto>> CreateTask([FromBody] CreateTaskDto newTask)
         {
             var task = await _taskService.CreateTaskAsync(newTask);
-            return Created("/create", task);
+            return CreatedAtAction(nameof(GetTasks), task);
         }
 
         [HttpDelete("tasks/{id}")]
