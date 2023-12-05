@@ -26,8 +26,10 @@
             <div class="list-group-item d-flex justify-content-between align-items-center" 
                 data-id="@task.Id">
                 <div class="d-flex align-items-center gap-1">
-                    <input id="isTaskCompletedCheckBox" class="is-completed-chkbox form-check-input" type="checkbox" asp-for="@task.IsCompleted">
-                    <div class="ms-2 editable-title">
+                    <div class="w-20">
+                        <input class="is-completed-chkbox form-check-input" type="checkbox" asp-for="@task.IsCompleted">
+                    </div>
+                    <div class="editable-title">
                         <div class="title form-check-label"
                             style="@(task.IsCompleted ? "text-decoration: line-through" : "")">
                             @task.Title
@@ -39,7 +41,7 @@
                     </div>
                     <button class="btn btn-primary save-btn" style="display: none">Зберегти</button>
                 </div>
-                <div>
+                <div class="d-flex flex-column flex-sm-row gap-1">
                     <button class="edit-btn btn btn-primary">Редагувати</button>
                     <button class="delete-btn btn btn-danger">Видалити</button>
                 </div>
@@ -76,8 +78,10 @@
             function getTaskHtml(task) {
                 return `<div class="list-group-item d-flex justify-content-between align-items-center" data-id="${task.id}">
                             <div class="d-flex align-items-center gap-1">
-                                <input class="is-completed-chkbox form-check-input" type="checkbox"
-                                    `+ (task.isCompleted ? 'checked' : '') +`>
+                                <div class="w-20">
+                                    <input class="is-completed-chkbox form-check-input" type="checkbox"
+                                        `+ (task.isCompleted ? 'checked' : '') +`>
+                                </div>
                                 <div class="ms-2 editable-title">
                                     <div class="title form-check-label"
                                         style="` + (task.isCompleted ? 'text-decoration: line-through;' : '') + `">${task.title}</div>
@@ -88,7 +92,7 @@
                                 </div>
                                 <button class="btn btn-primary save-btn" style="display: none">Зберегти</button>
                             </div>
-                            <div>
+                            <div class="d-flex flex-column flex-sm-row gap-1">
                                 <button class="btn btn-primary edit-btn">Редагувати</button>
                                 <button class="btn btn-danger delete-btn">Видалити</button>
                             </div>
@@ -147,13 +151,13 @@
 
                 $.ajax({
                     type: 'PATCH',
-                    url: '/tasks/' + $this.parent().parent().data('id'),
+                    url: '/tasks/' + $this.parent().parent().parent().data('id'),
                     contentType: 'application/json',
                     data: JSON.stringify({ isCompleted: isTaskCompleted }),
                     success: function () {
                         let style = isTaskCompleted ? 'line-through' : '';
                         console.log($this.parent().find('.title'));
-                        $this.parent().find('.title').css('text-decoration', style);
+                        $this.parent().parent().find('.title').css('text-decoration', style);
                     },
                     error: function (error) {
                         console.error(error);
