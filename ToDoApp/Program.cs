@@ -21,8 +21,12 @@ namespace ToDoApp
                 options.Filters.Add(typeof(ValidationFilter));
             });
 
+            var connectionString = Environment.GetEnvironmentVariable("PostgresConnection");
+            if (string.IsNullOrEmpty(connectionString))
+                connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
             builder.Services.AddDbContext<ToDoAppDbContext>(options =>
-                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseNpgsql(connectionString));
 
             builder.Services.AddScoped<ITaskRepository, TaskRepository>();
             builder.Services.AddScoped<ITaskService, TaskService>();

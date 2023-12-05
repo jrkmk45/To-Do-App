@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  web:
+    container_name: aspnetmvcapp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:8080"
+    volumes:
+      - ~/.aspnet/https:/https:ro
+    depends_on:
+      - db
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PostgresConnection=Server=db;Port=5432;Database=to_do_app_db;Username=postgres;Password=sampledbpass123
+    networks:
+      - aspnetmvcapp-network
+
+  db:
+    image: postgres:latest
+    container_name: aspnetmvcapp_db
+    restart: always
+    volumes:
+      - /var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: to_do_app_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: sampledbpass123
+    networks:
+      - aspnetmvcapp-network
+        
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - 81:8080
+    networks:
+      - aspnetmvcapp-network
+    depends_on:
+      - db
+
+networks:
+  aspnetmvcapp-network:
+    driver: bridge
