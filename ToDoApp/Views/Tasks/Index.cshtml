@@ -70,6 +70,7 @@
 {
     <script>
         const SEARCH_DEBOUNCE_DELAY = 400;
+        const MAX_TITLE_LENGTH = 250;
 
         $(document).ready(function () {
             function getTaskHtml(task) {
@@ -189,13 +190,15 @@
 
             var taskValidationRules = {
                 title: {
-                    required: true
+                    required: true,
+                    maxlength: MAX_TITLE_LENGTH
                 }
             };
 
             var taskValidationMessages = {
                 title: {
-                    required: "Обов'язкове поле!"
+                    required: "Обов'язкове поле!",
+                    maxlength: `Поле може містити до ${MAX_TITLE_LENGTH} символів!`
                 }
             };
 

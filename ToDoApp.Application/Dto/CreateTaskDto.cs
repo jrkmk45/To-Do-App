@@ -4,7 +4,7 @@ namespace ToDoApp.Application.Dto
 {
     public class CreateTaskDto
     {
-        [Required]
+        [Required, MaxLength(250)]
         public string Title { get; set; }
     }
 }
