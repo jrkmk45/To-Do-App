@@ -220,8 +220,6 @@
                         let taskId = container.data('id');
                         let taskTitle = container.find('.edit-title').val();
 
-                        let isCompleted = container.find('.is-completed-chkbox').is(':checked');
-
                         $.ajax({
                             type: 'PATCH',
                             url: '/tasks/' + taskId,
