@@ -9,9 +9,9 @@
         <form id="addTaskForm">
             <div class="form-group">
                 <label>Назва завдання</label>
-                <input id="newTaskName" type="text" class="form-control" required/>
+                <input id="newTaskName" type="text" name="title" class="form-control" />
             </div>
-            <button id="add-task" class="btn btn-primary mt-2">Додати</button>
+            <button id="add-task" class="btn btn-primary mt-2" type="submit">Додати</button>
         </form>
     </div>
 
@@ -35,11 +35,26 @@
                             @task.Title
                         </div>
                         <div class="d-flex flex-column">
-                            <input type="text" class="form-control edit-title" style="display: none"/>
-                            <div class="validation-message" style="display: none">Заповніть поле!</div>
+                            <form class="edit-title-form">
+                                <div class="d-flex gap-1">
+                                    <div>
+                                        <input type="text"
+                                           class="form-control edit-title" 
+                                           style="display: none"
+                                           name="title"/>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-primary save-btn" 
+                                                style="display: none" 
+                                                type="submit">
+                                            Зберегти
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                    <button class="btn btn-primary save-btn" style="display: none">Зберегти</button>
+                    
                 </div>
                 <div class="d-flex flex-column flex-sm-row gap-1">
                     <button class="edit-btn btn btn-primary">Редагувати</button>
@@ -50,31 +65,13 @@
     </div>
 </div>
 
+
 @section scripts 
 {
     <script>
         const SEARCH_DEBOUNCE_DELAY = 400;
 
         $(document).ready(function () {
-            $('#addTaskForm').submit(function (event) {
-                event.preventDefault();
-                let title = $('#newTaskName').val();
-
-                $.ajax({
-                    type: 'POST',
-                    url: '/tasks/',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ title: title }),
-                    success: function (response) {
-                        $('#taskList').prepend(getTaskHtml(response));
-                    },
-                    error: function (xhr, status, error) {
-                        console.error(xhr.responseText);
-                        alert('Виникла помилка!');
-                    }
-                });
-            });
-
             function getTaskHtml(task) {
                 return `<div class="list-group-item d-flex justify-content-between align-items-center" data-id="${task.id}">
                             <div class="d-flex align-items-center gap-1">
@@ -82,15 +79,29 @@
                                     <input class="is-completed-chkbox form-check-input" type="checkbox"
                                         `+ (task.isCompleted ? 'checked' : '') +`>
                                 </div>
-                                <div class="ms-2 editable-title">
+                                <div class="editable-title">
                                     <div class="title form-check-label"
                                         style="` + (task.isCompleted ? 'text-decoration: line-through;' : '') + `">${task.title}</div>
                                     <div class="d-flex flex-column">
-                                        <input type="text" class="form-control edit-title" style="display: none"/>
-                                        <div class="validation-message" style="display: none">Заповніть поле!</div>
+                                       <form class="edit-title-form">
+                                            <div class="d-flex gap-1">
+                                                <div>
+                                                    <input type="text"
+                                                       class="form-control edit-title" 
+                                                       style="display: none"
+                                                       name="title"/>
+                                                </div>
+                                                <div>
+                                                    <button class="btn btn-primary save-btn" 
+                                                            style="display: none" 
+                                                            type="submit">
+                                                        Зберегти
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
-                                <button class="btn btn-primary save-btn" style="display: none">Зберегти</button>
                             </div>
                             <div class="d-flex flex-column flex-sm-row gap-1">
                                 <button class="btn btn-primary edit-btn">Редагувати</button>
@@ -107,38 +118,6 @@
                 titleElement.hide();
                 container.find('.edit-title').val(textContent.trim()).show();
                 container.find('.save-btn').show();
-
-                container.find('.save-btn').on('click', function () {
-                    let taskId = container.data('id');
-                    let taskTitle = container.find('.edit-title').val();
-
-                    let validationMessageElement = container.find('.validation-message');
-                    if (taskTitle == '') {
-                        validationMessageElement.show();
-                        return;
-                    }
-                    else {
-                        validationMessageElement.hide();
-                    }
-
-                    let isCompleted = container.find('.is-completed-chkbox').is(':checked');
-
-                    $.ajax({
-                        type: 'PATCH',
-                        url: '/tasks/' + taskId,
-                        contentType: 'application/json',
-                        data: JSON.stringify({ title: taskTitle }),
-                        success: function (response) {
-                            container.find('.edit-title').hide();
-                            container.find('.save-btn').hide();
-                            container.find('.title').text(taskTitle).show();
-                        },
-                        error: function (error) {
-                            console.error(error);
-                            alert("Виникла помилка при редагуванні!");
-                        }
-                    });
-                });
             });
 
 
@@ -206,6 +185,90 @@
                         });
                     }, SEARCH_DEBOUNCE_DELAY
                 );
+            });
+
+            var taskValidationRules = {
+                title: {
+                    required: true
+                }
+            };
+
+            var taskValidationMessages = {
+                title: {
+                    required: "Обов'язкове поле!"
+                }
+            };
+
+            function validationErrorPlacement(error, element) {
+                error.css('color', 'red')
+                error.insertAfter(element);
+            };
+
+            $('.edit-title-form').each(function () {
+                setupForm($(this));
+            });
+
+            function setupForm(form) {
+                form.validate({
+                    rules: taskValidationRules,
+                    messages: taskValidationMessages,
+                    submitHandler: function (form, event) {
+                        event.preventDefault();
+
+                        let container = $(form).parents().eq(3);
+
+                        let taskId = container.data('id');
+                        let taskTitle = container.find('.edit-title').val();
+
+                        let isCompleted = container.find('.is-completed-chkbox').is(':checked');
+
+                        $.ajax({
+                            type: 'PATCH',
+                            url: '/tasks/' + taskId,
+                            contentType: 'application/json',
+                            data: JSON.stringify({ title: taskTitle }),
+                            success: function (response) {
+                                container.find('.edit-title').hide();
+                                container.find('.save-btn').hide();
+                                container.find('.title').text(taskTitle).show();
+                            },
+                            error: function (error) {
+                                console.error(error);
+                                alert("Виникла помилка при редагуванні!");
+                            }
+                        });
+                    },
+                    errorPlacement: validationErrorPlacement
+                });
+            }
+
+
+            $('#addTaskForm').validate({
+                rules: taskValidationRules,
+                messages: taskValidationMessages,
+                submitHandler: function(form, event) {
+                    if ($(form).valid()) {
+                        event.preventDefault();
+                        let title = $('#newTaskName').val();
+
+                        $.ajax({
+                            type: 'POST',
+                            url: '/tasks/',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ title: title }),
+                            success: function (response) {
+                                let newTask = $(getTaskHtml(response));
+                                $('#taskList').prepend(newTask);
+                                setupForm(newTask.find('.edit-title-form'));
+                            },
+                            error: function (xhr, status, error) {
+                                console.error(xhr.responseText);
+                                alert('Виникла помилка!');
+                            }
+                        });
+                    }
+                },
+                errorPlacement: validationErrorPlacement
             });
         });
     </script>
