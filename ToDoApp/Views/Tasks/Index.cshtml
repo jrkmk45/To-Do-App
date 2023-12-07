@@ -72,8 +72,8 @@
         const SEARCH_DEBOUNCE_DELAY = 400;
         const MAX_TITLE_LENGTH = 250;
 
-        $(document).ready(function () {
-            $('#showTextareaBtn').on('click', function () {
+        $(document).ready(function() {
+            $('#showTextareaBtn').on('click', function() {
                 $('textarea').show();
             });
 
@@ -115,7 +115,7 @@
                                         </div>`;
             }
 
-            $('#taskList').on('click', '.edit-btn', function () {
+            $('#taskList').on('click', '.edit-btn', function() {
                 let container = $(this).parent().parent();
                 let titleElement = container.find('.title');
                 let textContent = titleElement.text();
@@ -130,7 +130,7 @@
                 container.find('.save-btn').show();
             });
 
-            $('#taskList').on('click', '.is-completed-chkbox', function () {
+            $('#taskList').on('click', '.is-completed-chkbox', function() {
                 let isTaskCompleted = false;
                 let $this = $(this);
                 if ($this.is(':checked')) {
@@ -142,29 +142,29 @@
                     url: '/tasks/' + $this.parent().parent().parent().data('id'),
                     contentType: 'application/json',
                     data: JSON.stringify({ isCompleted: isTaskCompleted }),
-                    success: function () {
+                    success: function() {
                         let style = isTaskCompleted ? 'line-through' : '';
                         console.log($this.parent().find('.title'));
                         $this.parent().parent().find('.title').css('text-decoration', style);
                     },
-                    error: function (error) {
+                    error: function(error) {
                         console.error(error);
                         alert("Виникла помилка зміни статусу завдання!");
                     }
                 })
             });
 
-            $('#taskList').on('click', '.delete-btn', function () {
+            $('#taskList').on('click', '.delete-btn', function() {
                 let $this = $(this);
                 let taskId = $this.parent().parent().data('id');
                 $.ajax({
                     type: 'DELETE',
                     url: '/tasks/' + taskId,
-                    success: function () {
+                    success: function() {
                         console.log($this.parent().parent().remove());
                         $this.parent().parent().remove();
                     },
-                    error: function (error) {
+                    error: function(error) {
                         console.error(error);
                         alert("Виникла помилка видалення завдання!");
                     }
@@ -172,22 +172,22 @@
             });
 
             let debounceTimeout;
-            $('#searchBar').on('input', function (e) {
+            $('#searchBar').on('input', function(e) {
                 clearTimeout(debounceTimeout);
 
                 debounceTimeout = setTimeout(
-                    function () {
+                    function() {
                         $.ajax({
                             type: 'GET',
                             url: '/tasks/?title=' + $('#searchBar').val(),
                             contentType: 'application/json',
-                            success: function (response) {
+                            success: function(response) {
                                 $('#taskList').empty();
                                 response.forEach((task) => {
                                     $('#taskList').append(getTaskHtml(task));
                                 })
                             },
-                            error: function (xhr, status, error) {
+                            error: function(xhr, status, error) {
                                 console.error(xhr.responseText);
                                 alert('Виникла помилка!');
                             }
@@ -215,7 +215,7 @@
                 error.insertAfter(element);
             };
 
-            $('.edit-title-form').each(function () {
+            $('.edit-title-form').each(function() {
                 setupForm($(this));
             });
 
@@ -223,7 +223,7 @@
                 form.validate({
                     rules: taskValidationRules,
                     messages: taskValidationMessages,
-                    submitHandler: function (form, event) {
+                    submitHandler: function(form, event) {
                         event.preventDefault();
 
                         let container = $(form).parents().eq(3);
@@ -236,12 +236,12 @@
                             url: '/tasks/' + taskId,
                             contentType: 'application/json',
                             data: JSON.stringify({ title: taskTitle }),
-                            success: function (response) {
+                            success: function(response) {
                                 container.find('.edit-title').hide();
                                 container.find('.save-btn').hide();
                                 container.find('.title').text(taskTitle).show();
                             },
-                            error: function (error) {
+                            error: function(error) {
                                 console.error(error);
                                 alert("Виникла помилка при редагуванні!");
                             }
@@ -265,12 +265,12 @@
                             url: '/tasks/',
                             contentType: 'application/json',
                             data: JSON.stringify({ title: title }),
-                            success: function (response) {
+                            success: function(response) {
                                 let newTask = $(getTaskHtml(response));
                                 $('#taskList').prepend(newTask);
                                 setupForm(newTask.find('.edit-title-form'));
                             },
-                            error: function (xhr, status, error) {
+                            error: function(xhr, status, error) {
                                 console.error(xhr.responseText);
                                 alert('Виникла помилка!');
                             }
